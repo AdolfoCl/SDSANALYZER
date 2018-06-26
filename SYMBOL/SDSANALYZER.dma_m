@@ -46,8 +46,8 @@ $$VERSION  52.189.004                                                   10036000
    dfWord[1:256]                                                        10042000          
   ,bdStartRec[1:500]                                                    10043000          
   ,propWord[1:100]                                                      10044000          
-  ,strPropBlock[0:1000]                                                 10045000          
-  ,strPropWord[0:1000]                                                  10046000          
+  ,strPropBlock[0:4095]                                                 10045000ADC-180625
+  ,strPropWord[0:4095]                                                  10046000ADC-180625
   ,lastRecBuf[0:30]                                                     10047000          
   ;                                                                     10048000          
  BOOLEAN                                                                10049000          
@@ -105,7 +105,7 @@ $$VERSION  52.189.004                                                   10036000
      (KIND=DISK                                                         10096000          
      ,MYUSE=IN                                                          10097000          
      ,DEPENDENTSPECS                                                    10098000          
-%    ,TITLE="DESCRIPTION/PCS5DB."                                       10099000          
+%    ,TITLE="(TVPRGDRB)DESCRIPTION/TVPRGDRB ON PRUSER01."               10099000ADC-180625
      )                                                                  10100000          
   ,dataSet                                                              10101000          
      (KIND=DISK                                                         10102000          
@@ -263,7 +263,7 @@ $$VERSION  52.189.004                                                   10036000
        THRU aNumber := strPropWord [strIx] DO                           10251000          
          getNextWord;                                                   10252000          
        % DFWIX APUNTA AHORA AL COMIENZO DE LA ESTRUCTURA PROPS.         10253000          
-       FOR pwrdIx := 1 STEP 1 UNTIL 44 DO                               10254000          
+       FOR pwrdIx := 1 STEP 1 UNTIL 46 DO                               10254000ADC-180625
          movePropertyWord;                                              10255000          
        END of loadStructureProperties;                                  10256000          
                                                                         10257000          
@@ -415,7 +415,7 @@ $$VERSION  52.189.004                                                   10036000
        % (NUMROWSEXTRA)                                                 10392000          
        irAreasAllowed :=* + propWord [31].[47:20];                      10393000          
        % (POPULATIONF)                                                  10394000          
-       irPopulation := REAL(propWord [7].[27:28]);                      10395000          
+       irPopulation := propWord [46];                                   10395000ADC-180625
        % (SECTIONED)                                                    10396000          
        bSectioned := BOOLEAN(propWord [43].[46:1]);                     10397000          
        % (SECTIONS)                                                     10398000          
@@ -502,7 +502,7 @@ $$VERSION  52.189.004                                                   10036000
               BY " RECORDS-DELETED="48"7F",tDeletedRecs FOR*DIGITS,     10467000          
                  48"7F";                                                10467500          
          REPLACE pt:pt                                                  10468000          
-              BY " PCTJ-DELETED="48"7F""0,",deletedPCent FOR 3 DIGITS,  10470200          
+              BY " PCTJ-DELETED="48"7F""0.",deletedPCent FOR 3 DIGITS,  1047020050.189.001
                  48"7F";                                                1047040050.189.001
          END;                                                           10470500          
        REPLACE pt:pt                                                    10471000          
