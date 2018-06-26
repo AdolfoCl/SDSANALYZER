@@ -1,0 +1,600 @@
+$SET TADS                                                               10000000          
+%COPYRIGHT* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *%10001000          
+%*                                                                    *%10002000          
+%T            TITLE:  CLEARPATH HMP MARK 8.0 SYSTEM RELEASE           *%10003000          
+%*                                                                    *%10004000          
+%F                    FILE ID: SYMBOL/SDSANALYZER                     *%10005000          
+%*                                                                    *%10006000          
+%O                    OBJECT ID: OBJECT/SDSANALYZER                   *%10007000          
+%*                                                                    *%10008000          
+%*                    PROPRIETARY PROGRAM MATERIAL                    *%10009000          
+%*                                                                    *%10010000          
+%*      THIS   MATERIAL   IS   PROPRIETARY   TO   I. E. S.  LTD.      *%10011000          
+%*      AND IS  NOT TO BE REPRODUCED, USED OR  DISCLOSED  EXCEPT      *%10012000          
+%*      IN ACCORDANCE  WITH  PROGRAM  LICENSE  OR  UPON  WRITTEN      *%10013000          
+%*      AUTHORIZATION   OF  THE  PATENT   DIVISION   OF   I.E.S.      *%10014000          
+%*                                                                    *%10015000          
+%C           COPYRIGHT (C) 2007 I.E.S. LTD. (www.ies.cl)              *%10016000          
+%*                                                                    *%10017000          
+%** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *%10018000          
+%*                                                                    *%10019000          
+%*      THE WITHIN INFORMATION IS NOT INTENDED TO BE NOR  SHOULD      *%10020000          
+%*      SUCH   BE  CONSTRUED  AS   AN   AFFIRMATION   OF   FACT,      *%10021000          
+%*      REPRESENTATION   OR   WARRANTY   BY   I. E. S.  LTD.  OF      *%10022000          
+%*      ANY  TYPE,  KIND OR CHARACTER.  ANY PRODUCT AND  RELATED      *%10023000          
+%*      MATERIALS DISCLOSED HEREIN IS  ONLY  FURNISHED  PURSUANT      *%10024000          
+%*      AND  SUBJECT  TO  THE  TERMS  AND  CONDITIONS OF A  DULY      *%10025000          
+%*      EXECUTED LICENSE AGREEMENT.  THE ONLY WARRANTIES MADE BY      *%10026000          
+%*      I.E.S.  WITH RESPECT TO THE  PRODUCTS DESCRIBED  IN THIS      *%10027000          
+%*      MATERIAL ARE SETFORTH IN THE ABOVE MENTIONED AGREEMENT.       *%10028000          
+%*                                                                    *%10029000          
+%*      THE CUSTOMER SHOULD EXERCISE CARE TO ASSURE THAT USE  OF      *%10030000          
+%*      THE SOFTWARE WILL BE IN FULL COMPLIANCE WITH LAWS, RULES      *%10031000          
+%*      AND REGULATIONS OF THE  JURISDICTIONS  WITH  RESPECT  TO      *%10032000          
+%*      WHICH IT IS USED.                                             *%10033000          
+%*                                                                    *%10034000          
+%COPYRIGHT* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *%10035000          
+$$VERSION  52.189.004                                                   1003600052.189.004
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%10037000          
+% 001 2007/05/11 Creacion del software                                 %10038000          
+% 002 2007/07/11 Modificacion de porcentajes mayores a 100%            %1003850050.189.002
+% 003 2008/09/11 Acceso a tablas por title completo                    %1003860052.189.003
+% 004 2009/07/08 Modificaciones para estructuras Sectionadas           %1003880052.189.004
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%10039000          
+ BEGIN                                                                  10040000          
+ ARRAY                                                                  10041000          
+   dfWord[1:256]                                                        10042000          
+  ,bdStartRec[1:500]                                                    10043000          
+  ,propWord[1:100]                                                      10044000          
+  ,strPropBlock[0:1000]                                                 10045000          
+  ,strPropWord[0:1000]                                                  10046000          
+  ,lastRecBuf[0:30]                                                     10047000          
+  ;                                                                     10048000          
+ BOOLEAN                                                                10049000          
+   bSectioned                                                           10050000          
+  ,bDeletedError                                                        10050500          
+  ,blanqUser                                                            1005060052.189.003
+  ;                                                                     10051000          
+ DEFINE                                                                 10052000          
+   K = 1024 #                                                           10053000          
+  ,CAND(X,Y) = IF(X)THEN(Y)ELSE FALSE #                                 10054000          
+  ,vCrLf = 48"0D25" #                                                   10055000          
+  ,getNextWord = BEGIN                                                  10056000          
+                 dfwIx :=*+1;                                           10057000          
+                 IF dfwIx > 256 THEN                                    10058000          
+                   BEGIN                                                10059000          
+                   DFKEY :=*+1;                                         10060000          
+                   readDescFile;                                        10061000          
+                   dfwIx := 1;                                          10062000          
+                   END;                                                 10063000          
+                 END #                                                  10064000          
+  ,movePropertyWord = BEGIN                                             10065000          
+                      PropWord [PWRDIX] := dfWord [dfwIx];              10066000          
+                      getNextWord;                                      10067000          
+                      END #                                             10068000          
+  ,restartDataSetF = (BOOLEAN(propWord [19].[37:01])) #                 10069000          
+  ,variableFormat = (BOOLEAN(propWord [13].[46:01])) #                  10070000          
+  ,DKNUM = lastRecBuf[0] #                                              10071000          
+  ,DATAEOF = lastRecBuf[1] #                                            10072000          
+  ,DKBASE = lastRecBuf[2] #                                             10073000          
+  ,DKI = lastRecBuf[3] #                                                10074000          
+  ;                                                                     10075000          
+ EBCDIC ARRAY                                                           10076000          
+   buf[0:5*K]                                                           10077000          
+  ,dfChar [1] = dfWord                                                  10078000          
+  ,dbName[0:512]                                                        10079000          
+  ,propChar [1] = propWord                                              10080000          
+  ,dbPack                                                               1008020052.189.003
+  ,dbUser [0:17]                                                        1008050052.189.003
+  ,packName                                                             10081000          
+  ,dsName                                                               10082000          
+  ,dasdlTitle                                                           1008250052.189.003
+  ,fileTitle[0:255]                                                     10083000          
+  ;                                                                     10084000          
+ FILE                                                                   10085000          
+   XML                                                                  10086000          
+     (KIND=DISK                                                         10087000          
+     ,MYUSE=OUT                                                         10088000          
+     ,FRAMESIZE=8                                                       10089000          
+     ,MAXRECSIZE=1                                                      10090000          
+     ,ANYSIZEIO                                                         10091000          
+     ,BLOCKSTRUCTURE=FIXED                                              10092000          
+     ,FILESTRUCTURE=STREAM                                              10093000          
+     )                                                                  10094000          
+  ,DASDL                                                                10095000          
+     (KIND=DISK                                                         10096000          
+     ,MYUSE=IN                                                          10097000          
+     ,DEPENDENTSPECS                                                    10098000          
+%    ,TITLE="DESCRIPTION/PCS5DB."                                       10099000          
+     )                                                                  10100000          
+  ,dataSet                                                              10101000          
+     (KIND=DISK                                                         10102000          
+     ,MYUSE=IN                                                          10103000          
+     ,DEPENDENTSPECS                                                    10104000          
+     )                                                                  10105000          
+  ;                                                                     10106000          
+ POINTER                                                                10107000          
+   pt                                                                   10108000          
+  ,p                                                                    1010850052.189.003
+  ;                                                                     10109000          
+ REAL                                                                   10110000          
+   aNumber                                                              10111000          
+  ,sub1                                                                 10112000          
+  ,sub2                                                                 10113000          
+  ,dfwIx                                                                10114000          
+  ,DFKEY                                                                10115000          
+  ,BDIX                                                                 10116000          
+  ,strListBlock                                                         10117000          
+  ,strListWord                                                          10118000          
+  ,PWRDIX                                                               10119000          
+  ,dbNameLen                                                            10120000          
+  ,hd2UpdateLevel                                                       10121000          
+  ,strIx                                                                10122000          
+  ,strCount                                                             10123000          
+  ,textBase                                                             10124000          
+  ,dsNameLen                                                            10125000          
+  ,nameTitleLen                                                         10126000          
+  ,typeF                                                                10127000          
+  ,subTypeF                                                             10128000          
+  ,hyphenCnt                                                            10129000          
+  ,textOffset                                                           10130000          
+  ,lastRec                                                              10131000          
+  ,wsAreaSize                                                           10132000          
+  ,wsAreas                                                              10133000          
+  ,pSectors                                                             10134000          
+  ,tDeletedRecs                                                         10135000          
+  ,fullSegs                                                             10136000          
+  ,lastSeg                                                              10137000          
+  ,partitionInfoSn                                                      10138000          
+  ,maxPartitions                                                        10139000          
+  ,t7                                                                   10140000          
+  ,tActiveRecs                                                          10141000          
+  ,deletedPCent                                                         10142000          
+  ,tRecsActive                                                          10143000          
+  ,irBlkSizeInRecs                                                      10144000          
+  ,irRecSizeInWords                                                     10145000          
+  ,irAreasAllowed                                                       10146000          
+  ,irPopulation                                                         10147000          
+  ,areasPCent                                                           10148000          
+  ,secIx                                                                10149000          
+  ;                                                                     10150000          
+ INTEGER                                                                10151000          
+   numBlocks                                                            10152000          
+  ,sections                                                             10153000          
+  ,l                                                                    1015350052.189.003
+  ,m                                                                    1015360052.189.003
+  ;                                                                     10154000          
+                                                                        10155000          
+ PROCEDURE readDescFile;                                                10156000          
+   BEGIN                                                                10157000          
+                                                                        10158000          
+   READ(DASDL [dfKey], DASDL.MAXRECSIZE, dfWord);                       10159000          
+   END of readDescFile;                                                 10160000          
+                                                                        10161000          
+ PROCEDURE loadBlockDirEntry;                                           10162000          
+   BEGIN                                                                10163000          
+                                                                        10164000          
+   aNumber := dfWord [dfwIx].[11:12];                                   10165000          
+   bdStartRec [BDIX] := aNumber;                                        10166000          
+   getNextWord;                                                         10167000          
+   BDIX :=*+1;                                                          10168000          
+   END of loadBlockDirEntry;                                            10169000          
+                                                                        10170000          
+ PROCEDURE loadBlockDirectory;                                          10171000          
+   BEGIN                                                                10172000          
+   dfKey := 0;                                                          10173000          
+   readDescFile;                                                        10174000          
+   sub1 := dfWord[4].[31:16] + 1;                                       10175000          
+   % sub1 = DIRECCION DE PARTIDA DEL DIRECTORIO DE BLOQUES              10176000          
+   sub2 := dfWord[4].[15:16] - 2;                                       10177000          
+   % sub2 = NUMERO DE BLOQUES EN EL ARCHIVO,                            10178000          
+   %        EXCEPTO EL BLOQUE CERO.                                     10179000          
+   dfwIx := sub1 + 1;                                                   10180000          
+   % dfwIx APUNTA AHORA AL DIRECTORIO PARA EL BLOQUE 1.                 10181000          
+   BDIX := 1;                                                           10182000          
+   DO                                                                   10183000          
+     loadBlockDirEntry                                                  10184000          
+   UNTIL (BDIX > sub2);                                                 10185000          
+   END of loadBlockDirectory;                                           10186000          
+                                                                        10187000          
+ PROCEDURE loadDbProps;                                                 10188000          
+   BEGIN                                                                10189000          
+   %  CARGA LAS PROPIEDADES DE LA BASE DE DATOS EN EL AREA DE           10190000          
+   %  TRABAJO.                                                          10191000          
+                                                                        10192000          
+   DFKEY := 0;                                                          10193000          
+   readDescFile;                                                        10194000          
+   aNumber := dfWord[8].[47:16];                                        10195000          
+   % ANUMBER = NUMERO DE BLOQUE DONDE ESTAN LAS PROPIEDADES             10196000          
+   DFKEY := bdStartRec [aNumber];                                       10197000          
+   % DFKEY = REGISTRO FISICO DONDE COMIENZA EL BLOQUE                   10198000          
+   sub1 := dfWord[8].[15:16] + 1;                                       10199000          
+   % SUB1 = NUMERO DE PALABRA EN DONDE COMIENZA LA PROPERTIES           10200000          
+   %        AHI ES DONDE CAPTURAREMOS LA UBICACION DE LA LISTA DE       10201000          
+   %        ESTRUCTURAS                                                 10202000          
+   strListBlock := aNumber;                                             10203000          
+   strListWord := dfWord[8].[31:16];                                    10204000          
+   readDescFile;                                                        10205000          
+   dfwIx := 1;                                                          10206000          
+   aNumber := SUB1 - 1;                                                 10207000          
+   THRU aNumber DO                                                      10208000          
+     getNextWord;                                                       10209000          
+   % AHORA dfwIx APUNTA A LA PRIMERA PALABRA DE LAS DB PROPS            10210000          
+   FOR pwrdIx := 1 STEP 1 UNTIL 48 DO                                   10211000          
+     movePropertyWord;                                                  10212000          
+   END of loadDbProps;                                                  10213000          
+                                                                        10214000          
+ PROCEDURE loadStructureTable;                                          10215000          
+   BEGIN                                                                10216000          
+                                                                        10217000          
+   DFKEY := bdStartRec [strListBlock];                                  10218000          
+   readDescFile;                                                        10219000          
+   dfwIx := 1;                                                          10220000          
+   THRU strListWord DO                                                  10221000          
+     getNextWord;                                                       10222000          
+   % dfwIx POINTS TO FIRST WORD OF STRUCTURE LIST                       10223000          
+   strCount := dfWord [dfwIx];                                          10224000          
+   FOR strIx := 1 STEP 1 UNTIL strCount DO                              10225000          
+     BEGIN                                                              10226000          
+     getNextWord;                                                       10227000          
+     strPropBlock [strIx] := dfWord [dfwIx].[47:16];                    10228000          
+     strPropWord [strIx] := dfWord [dfwIx].[15:16];                     10229000          
+     END;                                                               10230000          
+   END of loadStructureTable;                                           10231000          
+                                                                        10232000          
+ PROCEDURE processStructureList;                                        10233000          
+   BEGIN                                                                10234000          
+   %  SIGUE LOS PUNTEROS EN LA LISTA DE ESTRUCTURAS Y CARGA LA TABLA    10235000          
+   %  DE ESTRUCTURAS CON LOS PUNTEROS AL COMIENZO DE LAS PROPIEDADES    10236000          
+   %  DE CADA ESTRUCTURA.                                               10237000          
+   PROCEDURE processAStructure;                                         10238000          
+     BEGIN                                                              10239000          
+     % CARGA LAS PROPIEDADES PARA LA ESTRUCTURA EN EL AREA DE TRABAJO   10240000          
+     % DETERMINA DE LOS CAMPOS TYPEF Y SUBTYPEF CUANDO SE TRATA DE      10241000          
+     % LAS PROPIEDADES DE UN DATA SET ESTANDARD DE FORMATO FIJO.        10242000          
+     PROCEDURE loadStructureProperties;                                 10243000          
+       BEGIN                                                            10244000          
+                                                                        10245000          
+       sub1 := strPropBlock [strIx];                                    10246000          
+       dfKey := bdStartRec [sub1];                                      10247000          
+       readDescFile;                                                    10248000          
+       textBase := dfWord [3];                                          10249000          
+       dfwIx := 1;                                                      10250000          
+       THRU aNumber := strPropWord [strIx] DO                           10251000          
+         getNextWord;                                                   10252000          
+       % DFWIX APUNTA AHORA AL COMIENZO DE LA ESTRUCTURA PROPS.         10253000          
+       FOR pwrdIx := 1 STEP 1 UNTIL 44 DO                               10254000          
+         movePropertyWord;                                              10255000          
+       END of loadStructureProperties;                                  10256000          
+                                                                        10257000          
+     PROCEDURE processDataSetProperties;                                10258000          
+       BEGIN                                                            10259000          
+       % ESCRIBE INFORMACION SOBRE LOS ATRIBUTOS FISICOS DEL DATA SET   10260000          
+       PROCEDURE constructPhysicalFileTitle(inx);                       10261000          
+         VALUE inx;                                                     10262000          
+         INTEGER inx;                                                   10263000          
+         BEGIN                                                          10264000          
+         POINTER                                                        10265000          
+           p                                                            10266000          
+          ,q                                                            10267000          
+          ;                                                             10268000          
+         REAL                                                           10269000          
+           l                                                            10270000          
+          ;                                                             10271000          
+         TRUTHSET                                                       10272000          
+           separador (48"7F" OR "/" OR ".")                             10273000          
+          ,hyphens ("-")                                                10274000          
+          ;                                                             10275000          
+                                                                        10276000          
+         SCAN dbName FOR hyphenCnt:dbNameLen UNTIL = "-";               10277000          
+         p := fileTitle;                                                10278000          
+         IF blanqUser THEN                                              1027810052.189.003
+           REPLACE p:p BY "*"                                           1027820052.189.003
+         ELSE                                                           1027830052.189.003
+           REPLACE p:p                                                  1027850052.189.003
+                BY "(", dbUser FOR SIZE(dbUser) UNTIL = 48"00",")";     1027860052.189.003
+         IF hyphenCnt > 0 THEN                                          10279000          
+           REPLACE p:p BY 48"7F";                                       10280000          
+         REPLACE p:p BY dbName FOR dbNameLen;                           10281000          
+         IF hyphenCnt > 0 THEN                                          10282000          
+           REPLACE p:fileTitle BY 48"7F";                               10283000          
+         REPLACE p:p BY "/";                                            10284000          
+                                                                        10285000          
+         dfKey := bdStartRec [sub1];                                    10286000          
+         readDescFile;                                                  10287000          
+         dfwIx := 1;                                                    10288000          
+         THRU textBase DO                                               10289000          
+           getNextWord;                                                 10290000          
+         textOffset := propWord [10].[47:16];                           10291000          
+         THRU textOffset DO                                             10292000          
+           getNextWord;                                                 10293000          
+         dfwIx := (((dfwIx - 1) * 6) + 1);                              10294000          
+         q := dfChar[dfwIx];                                            10295000          
+         SCAN q FOR l:256 UNTIL = ".";                                  10296000          
+         l := 256 - l;                                                  10297000          
+         SCAN q FOR hyphenCnt:l UNTIL IN hyphens;                       10298000          
+         IF hyphenCnt > 0 THEN                                          10299000          
+           REPLACE p:p BY 48"7F";                                       10300000          
+         WHILE l > 0 DO                                                 10301000          
+           BEGIN                                                        10302000          
+           REPLACE p:p BY q:q FOR l:l UNTIL IN separador;               10303000          
+           IF q = 48"7F" THEN                                           10304000          
+             BEGIN                                                      10305000          
+             q :=*+1;                                                   10306000          
+             l :=*-1;                                                   10307000          
+             END                                                        10308000          
+           ELSE IF q = "/" THEN                                         10309000          
+             BEGIN                                                      10310000          
+             IF hyphenCnt > 0 THEN                                      10311000          
+               REPLACE p:p BY 48"7F";                                   10312000          
+             REPLACE p:p BY q:q FOR 1;                                  10313000          
+             l :=*-1;                                                   10314000          
+             END                                                        10315000          
+           ELSE IF q = "." THEN                                         10316000          
+             l := 0                                                     10317000          
+           END;                                                         10318000          
+                                                                        10319000          
+         IF inx >= 0 THEN                                               10320000          
+           REPLACE p:p BY "/",inx FOR*DIGITS;                           10321000          
+                                                                        10322000          
+         REPLACE p:p BY " ON ";                                         10323000          
+                                                                        10324000          
+         dfKey := bdStartRec [sub1];                                    10325000          
+         readDescFile;                                                  10326000          
+         dfwIx := 1;                                                    10327000          
+         THRU textBase DO                                               10328000          
+           getNextWord;                                                 10329000          
+         textOffset := propWord [10].[31:16];                           10330000          
+         THRU textOffset DO                                             10331000          
+           getNextWord;                                                 10332000          
+         dfwIx := (((dfwIx - 1) * 6) + 1);                              10333000          
+         q := dfChar[dfwIx];                                            10334000          
+         SCAN q FOR l:30 UNTIL = ".";                                   10335000          
+         l := 30-l;                                                     10336000          
+         SCAN q:q FOR l:l WHILE = 48"7F";                               10337000          
+         REPLACE packName BY q UNTIL = ".",48"00";                      10338000          
+         IF packName = "DISK" THEN                                      1033820052.189.003
+           REPLACE packName                                             1033840052.189.003
+                BY dbPack FOR SIZE(dbPack) UNTIL=48"00",48"00";         1033850052.189.003
+                                                                        10339000          
+         REPLACE p:p BY packName FOR SIZE(packName) UNTIL = 48"00";     1034000052.189.003
+                                                                        10341000          
+         REPLACE p:p BY "."48"00";                                      10342000          
+         END of constructPhysicalFileTitle;                             10343000          
+                                                                        10344000          
+       PROCEDURE processLastRecord;                                     10345000          
+         BEGIN                                                          10346000          
+         INTEGER                                                        10347000          
+           tsAreas                                                      10348000          
+          ,lActiveRecs                                                  10349000          
+          ,lDeletedRecs                                                 10350000          
+          ;                                                             10351000          
+                                                                        10352000          
+         OPEN (dataSet);                                                10353000          
+         lastRec := dataSet.LASTRECORD + 1;                             10354000          
+         wsAreaSize := dataSet.AREASIZE;                                10355000          
+         tsAreas := lastRec DIV wsAreaSize;                             10356000          
+         IF tsAreas * wsAreaSize NEQ lastRec THEN                       10357000          
+           tsAreas :=*+1;                                               10358000          
+         pSectors :=* + tsAreas * wsAreaSize;                           10359000          
+         wsAreas :=* + tsAreas;                                         10360000          
+                                                                        10361000          
+         READ(dataSet [lastRec-1], dataSet.MAXRECSIZE, lastRecBuf);     10362000          
+         TRY                                                            10362500          
+           lDeletedRecs := dkNum * 29 + dki                             10363000          
+         ELSE                                                           10363100          
+           bDeletedError := TRUE;                                       10363300          
+         fullSegs := DATAEOF.[47:28];                                   10364000          
+         lastSeg := DATAEOF.[15:16];                                    10365000          
+         numBlocks := irBlkSizeInRecs * irRecSizeInWords + 2;           10366000          
+         IF (numBlocks MOD 30) NEQ 0 THEN                               10367000          
+           numBlocks := (numBlocks DIV 30) + 1                          10368000          
+         ELSE                                                           10369000          
+           numBlocks := numBlocks DIV 30;                               10370000          
+         numBlocks := fullSegs / numBlocks;                             10371000          
+         lActiveRecs := ((numBlocks * irBlkSizeInRecs)                  10372000          
+                       + (lastSeg / irRecSizeInWords)                   10373000          
+                                                      - 1);             10374000          
+         IF lDeletedRecs > lActiveRecs THEN                             10375000          
+           lDeletedRecs := lActiveRecs;                                 10376000          
+         tActiveRecs :=* + lActiveRecs;                                 10377000          
+         tDeletedRecs :=* + lDeletedRecs;                               10378000          
+         tRecsActive :=* + lActiveRecs - lDeletedRecs;                  10379000          
+                                                                        10380000          
+         CLOSE(dataSet, LOCK);                                          10381000          
+         END of processLastRecord;                                      10382000          
+                                                                        10383000          
+       dsNameLen := propWord [3].[47:08];                               10384000          
+       REPLACE dsName BY POINTER(propWord [3])+1 FOR dsNameLen;         10385000          
+       % (RECORDSZ--RECORDS SIZE EN PALABRAS (6 BYTES))                 10386000          
+       irRecSizeInWords := propWord [12].[11:12];                       10387000          
+       % (BLOCKSZ--BLOCK SIZE IN RECS)                                  10388000          
+       irBlkSizeInRecs :=  propWord [6].[11:12];                        10389000          
+       % (NUMROWS)                                                      10390000          
+       irAreasAllowed := propWord [7].[11:12];                          10391000          
+       % (NUMROWSEXTRA)                                                 10392000          
+       irAreasAllowed :=* + propWord [31].[47:20];                      10393000          
+       % (POPULATIONF)                                                  10394000          
+       irPopulation := REAL(propWord [7].[27:28]);                      10395000          
+       % (SECTIONED)                                                    10396000          
+       bSectioned := BOOLEAN(propWord [43].[46:1]);                     10397000          
+       % (SECTIONS)                                                     10398000          
+       sections := propWord [43].[39:24];                               10399000          
+       IF sections > 0 THEN                                             1039920052.189.004
+         irAreasAllowed :=* * sections;                                 1039950052.189.004
+                                                                        10400000          
+       REPLACE pt:buf                                                   10401000          
+            BY "<DATASET STR-NAME="48"7F",                              10402000          
+               dsName FOR dsNameLen,48"7F";                             10403000          
+       REPLACE pt:pt                                                    10404000          
+            BY " NUM="48"7F",strIx FOR*DIGITS,48"7F";                   1040500050.189.001
+       REPLACE pt:pt                                                    10412000          
+            BY " SECTIONS="48"7F",propWord [43].[39:24]FOR*DIGITS,      10413000          
+               48"7F";                                                  10414000          
+                                                                        10418000          
+       pSectors := 0;                                                   10419000          
+       wsAreaSize := 0;                                                 10420000          
+       wsAreas := 0;                                                    10421000          
+       areasPCent := 0;                                                 10422000          
+       tActiveRecs := 0;                                                10423000          
+       tRecsActive := 0;                                                10424000          
+       tDeletedRecs := 0;                                               10424500          
+       bDeletedError := FALSE;                                          10424600          
+                                                                        10425000          
+       IF NOT bSectioned THEN                                           10426000          
+         BEGIN                                                          10427000          
+         constructPhysicalFileTitle(-1);                                10428000          
+                                                                        10429000          
+         REPLACE dataSet.TITLE BY fileTitle;                            10430000          
+         dataSet(FILEUSE = IN);                                         10431000          
+         IF dataSet.RESIDENT THEN                                       10432000          
+           processLastRecord;                                           10433000          
+         END                                                            10434000          
+       ELSE                                                             10435000          
+         BEGIN                                                          10436000          
+         secIx := -1;                                                   10437000          
+         THRU sections DO                                               10438000          
+           BEGIN                                                        10439000          
+           constructPhysicalFileTitle(secIx :=*+1);                     10440000          
+                                                                        10441000          
+           REPLACE dataSet.TITLE BY fileTitle;                          10442000          
+           dataSet(FILEUSE = IN);                                       10443000          
+           IF dataSet.RESIDENT THEN                                     10444000          
+             processLastRecord;                                         10445000          
+           END;                                                         10446000          
+         END;                                                           10447000          
+       areasPCent := wsAreas / irAreasAllowed * 1000;                   10448000          
+       deletedPCent := 0;                                               10448500          
+       IF tActiveRecs > 0 THEN                                          10449000          
+         deletedPCent := tDeletedRecs / tActiveRecs * 1000;             10450000          
+                                                                        10451000          
+       REPLACE pt:pt                                                    10452000          
+            BY " FAMILY="48"7F",packName UNTIL = 48"00",48"7F";         1045300050.189.001
+       REPLACE pt:pt                                                    10454000          
+            BY " SECTORS="48"7F",pSectors FOR*DIGITS,48"7F";            10455000          
+       REPLACE pt:pt                                                    1045520050.189.001
+            BY " MB="48"7F",((pSectors*180/K/K)DIV 1)FOR*DIGITS,".",    1045540050.189.001
+               ((pSectors*180/K/K*100)MOD 100)FOR 2 DIGITS,48"7F";      1045560050.189.001
+       REPLACE pt:pt                                                    10456000          
+            BY " AREAS-ALLOWED="48"7F",irAreasAllowed FOR*DIGITS,48"7F";10457000          
+       REPLACE pt:pt                                                    10458000          
+            BY " AREAS-INUSE="48"7F",wsAreas FOR*DIGITS,48"7F";         10459000          
+       IF areasPCent > 1000 THEN                                        1045920050.189.002
+         REPLACE pt:pt                                                  1045940050.189.002
+              BY " PCTJ-INUSE="48"7F",(areasPCent DIV 1000)FOR 1 DIGITS,1045945050.189.002
+                 "."                                                    1045950050.189.002
+       ELSE                                                             1045960050.189.002
+         REPLACE pt:pt BY " PCTJ-INUSE="48"7F""0.";                     1045980050.189.002
+       REPLACE pt:pt BY (areasPCent MOD 1000) FOR 3 DIGITS,48"7F";      1046000050.189.002
+       REPLACE pt:pt                                                    10463000          
+            BY " RECORDS-ALLOCATED="48"7F",tActiveRecs FOR*DIGITS,      10464000          
+               48"7F";                                                  10465000          
+       IF bDeletedError THEN                                            10465100          
+         BEGIN                                                          10465200          
+         REPLACE pt:pt                                                  10465300          
+              BY " RECORDS-DELETED="48"7F","************"48"7F";        10465400          
+         REPLACE pt:pt                                                  10465500          
+              BY " PCTJ-DELETED="48"7F","**********,**"48"7F";          10465600          
+         END                                                            10465700          
+       ELSE                                                             10465800          
+         BEGIN                                                          10465900          
+         REPLACE pt:pt                                                  10466000          
+              BY " RECORDS-DELETED="48"7F",tDeletedRecs FOR*DIGITS,     10467000          
+                 48"7F";                                                10467500          
+         REPLACE pt:pt                                                  10468000          
+              BY " PCTJ-DELETED="48"7F""0,",deletedPCent FOR 3 DIGITS,  10470200          
+                 48"7F";                                                1047040050.189.001
+         END;                                                           10470500          
+       REPLACE pt:pt                                                    10471000          
+            BY " ACTIVE-RECORDS="48"7F",tRecsActive FOR*DIGITS,48"7F";  10472000          
+       REPLACE pt:pt                                                    10473000          
+            BY " POPULATION="48"7F",irPopulation FOR*DIGITS,48"7F";     10474000          
+%      REPLACE pt:pt                                                    10475000          
+%           BY " RECORDSZ="48"7F",propWord [12].[11:12] FOR*DIGITS,     10476000          
+%              48"7F";                                                  10477000          
+%      REPLACE pt:pt                                                    10478000          
+%           BY " BLOCKSZ="48"7F",propWord [06].[11:12] FOR*DIGITS,      10479000          
+%              48"7F";                                                  10480000          
+                                                                        10481000          
+       REPLACE pt:pt BY "/>",vCrLf;                                     10482000          
+       WRITE (XML, OFFSET(pt), buf);                                    10483000          
+       END of processDataSetProperties;                                 10484000          
+                                                                        10485000          
+     loadStructureProperties;                                           10486000          
+     typeF := propWord [2].[07:08];                                     10487000          
+     subTypeF := propWord [2].[35:04];                                  10488000          
+     partitionInfoSn := propWord [6].[23:12];                           10489000          
+     maxPartitions := propWord [13].[23:16];                            10490000          
+     IF typeF = 2 AND subTypeF = 0 THEN %Dataset                        10491000          
+       BEGIN                                                            10492000          
+       IF NOT restartDataSetF THEN                                      10493000          
+         BEGIN                                                          10494000          
+         IF NOT variableFormat THEN                                     10495000          
+           processDataSetProperties;                                    10496000          
+         END;                                                           10497000          
+       END;                                                             10498000          
+     END of processAStructure;                                          10499000          
+                                                                        10500000          
+   loadStructureTable;                                                  10501000          
+   FOR strIx := 2 STEP 1 UNTIL strCount DO                              10502000          
+     processAStructure;                                                 10503000          
+   END of processStructureList;                                         10504000          
+                                                                        10505000          
+ PROCEDURE processDdProps;                                              10506000          
+   BEGIN                                                                10507000          
+                                                                        10508000          
+   dbNameLen := propWord [3].[47:08];                                   10509000          
+   REPLACE dbName BY propChar[14] FOR dbNameLen;                        10510000          
+   REPLACE buf BY "XML/STATUS/",dbName FOR dbNameLen,"."48"00";         1051020052.189.003
+   REPLACE XML.TITLE BY buf;                                            10510400          
+   OPEN (XML);                                                          10510600          
+   REPLACE pt:buf                                                       1051065050.189.001
+        BY "<?xml version="""1.0""" encoding="""UTF-8""" standalone="   1051070050.189.001
+           ""yes"""?>",vCrLf;                                           1051075050.189.001
+   WRITE(XML, OFFSET(pt), buf);                                         1051080050.189.001
+   aNumber := propWord[16].[47:20];                                     10511000          
+   DISPLAY(STRING(dbName, dbNameLen) CAT ": UPDATE LEVEL "              10512000          
+           CAT STRING(aNumber,*));                                      10513000          
+   hd2UpdateLevel := aNumber;                                           10514000          
+   t7 := TIME(7);                                                       10515000          
+   REPLACE pt:buf                                                       10516000          
+        BY "<DATABASE DB-NAME="48"7F",dbName FOR dbNameLen,48"7F",      10517000          
+           " UPDATE-LEVEL="48"7F",aNumber FOR*DIGITS,48"7F"             10518000          
+           " REPORT-DATE="48"7F", t7.[29:06]FOR 2 DIGITS,"/",           10519000          
+           t7.[35:06]FOR 2 DIGITS,"/",t7.[47:12]FOR 4 DIGITS,           10520000          
+           " ",t7.[23:06]FOR 2 DIGITS,":",t7.[17:06]FOR 2 DIGITS,":",   10521000          
+           t7.[11:06]FOR 2 DIGITS,48"7F",                               10522000          
+           " >",vCrLf;                                                  10523000          
+   WRITE(XML, OFFSET(pt), buf);                                         10524000          
+                                                                        10525000          
+   processStructureList;                                                10526000          
+                                                                        10527000          
+   REPLACE pt:buf                                                       10528000          
+        BY "</DATABASE>",vCrLf;                                         10529000          
+   WRITE(XML, OFFSET(pt), buf);                                         10530000          
+   END of processDdProps;                                               10531000          
+                                                                        10532000          
+ %%%%%%%%%%%%%%%%%%%%%  O U T E R   B L O C K  %%%%%%%%%%%%%%%%%%%%%%%%%10533000          
+                                                                        10534000          
+ OPEN (DASDL);                                                          10535000          
+ REPLACE dasdlTitle BY DASDL.TITLE;                                     1053520052.189.003
+ IF dasdlTitle = "*" THEN                                               1053540052.189.003
+   blanqUser := TRUE                                                    1053560052.189.003
+ ELSE                                                                   1053580052.189.003
+   REPLACE dbUser BY dasdlTitle[1] UNTIL = ")";                         1053600052.189.003
+ SCAN p:dasdlTitle FOR l:SIZE(dasdlTitle) UNTIL = " ";                  1053601052.189.003
+ IF CAND(l>0, p = " ON ") THEN                                          1053602052.189.003
+   BEGIN                                                                1053603052.189.003
+   p :=*+4;                                                             1053604052.189.003
+   l :=*-4;                                                             1053605052.189.003
+   SCAN p FOR m:l UNTIL = ".";                                          1053606052.189.003
+   REPLACE dbPack BY p FOR (l-m);                                       1053607052.189.003
+   END                                                                  1053608052.189.003
+ ELSE                                                                   1053609052.189.003
+   REPLACE dbPack BY "DISK";                                            1053610052.189.003
+                                                                        1053620052.189.003
+ loadBlockDirectory;                                                    10537000          
+ loadDbProps;                                                           10538000          
+ processDdProps;                                                        10539000          
+ CLOSE (XML, LOCK);                                                     10540000          
+ END.                                                                   10541000          
