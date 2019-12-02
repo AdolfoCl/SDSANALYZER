@@ -576,6 +576,13 @@ $$VERSION  52.189.004                                                   10036000
                                                                         10532000          
  %%%%%%%%%%%%%%%%%%%%%  O U T E R   B L O C K  %%%%%%%%%%%%%%%%%%%%%%%%%10533000          
                                                                         10534000          
+ REPLACE dasdlTitle BY DASDL.TITLE;                                     10534100ADC-191119
+ IF (dasdlTitle = "DASDL.") THEN                                        10534200ADC-191119
+   BEGIN                                                                10534300ADC-191119
+   REPLACE dasdlTitle                                                   10534400ADC-191119
+        BY "DESCRIPTION/",MYSELF.USERCODE,48"00";                       10534500ADC-191119
+   REPLACE DASDL.TITLE BY dasdlTitle;                                   10534600ADC-191119
+   END;                                                                 10534700ADC-191119
  OPEN (DASDL);                                                          10535000          
  REPLACE dasdlTitle BY DASDL.TITLE;                                     1053520052.189.003
  IF dasdlTitle = "*" THEN                                               1053540052.189.003
