@@ -34,12 +34,16 @@ $SET TADS                                                               10000000
 %*      WHICH IT IS USED.                                             *%10033000          
 %*                                                                    *%10034000          
 %COPYRIGHT* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *%10035000          
-$$VERSION  52.189.004                                                   1003600052.189.004
+$$VERSION  57.189.005                                                   10036000ADC-200411
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%10037000          
 % 001 2007/05/11 Creacion del software                                 %10038000          
 % 002 2007/07/11 Modificacion de porcentajes mayores a 100%            %1003850050.189.002
 % 003 2008/09/11 Acceso a tablas por title completo                    %1003860052.189.003
 % 004 2009/07/08 Modificaciones para estructuras Sectionadas           %1003880052.189.004
+% 005 2020/04/11 Adaptacion para LOAD XML:                             %10038820ADC-200411
+%     LOAD XML INFILE "C:\\Users\\adiaz\\Downloads\\IQGDRB.xml"        %10038840ADC-200411
+%     INTO TABLE ispecs                                                %10038860ADC-200411
+%     ROWS IDENTIFIED BY '<DATASET>';                                  %10038880ADC-200411
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%10039000          
  BEGIN                                                                  10040000          
  ARRAY                                                                  10041000          
@@ -424,7 +428,7 @@ $$VERSION  52.189.004                                                   10036000
          irAreasAllowed :=* * sections;                                 1039950052.189.004
                                                                         10400000          
        REPLACE pt:buf                                                   10401000          
-            BY "<DATASET STR-NAME="48"7F",                              10402000          
+            BY "<DATASET STR_NAME="48"7F",                              10402000ADC-200411
                dsName FOR dsNameLen,48"7F";                             10403000          
        REPLACE pt:pt                                                    10404000          
             BY " NUM="48"7F",strIx FOR*DIGITS,48"7F";                   1040500050.189.001
@@ -476,37 +480,37 @@ $$VERSION  52.189.004                                                   10036000
             BY " MB="48"7F",((pSectors*180/K/K)DIV 1)FOR*DIGITS,".",    1045540050.189.001
                ((pSectors*180/K/K*100)MOD 100)FOR 2 DIGITS,48"7F";      1045560050.189.001
        REPLACE pt:pt                                                    10456000          
-            BY " AREAS-ALLOWED="48"7F",irAreasAllowed FOR*DIGITS,48"7F";10457000          
+            BY " AREAS_ALLOWED="48"7F",irAreasAllowed FOR*DIGITS,48"7F";10457000ADC-200411
        REPLACE pt:pt                                                    10458000          
-            BY " AREAS-INUSE="48"7F",wsAreas FOR*DIGITS,48"7F";         10459000          
+            BY " AREAS_INUSE="48"7F",wsAreas FOR*DIGITS,48"7F";         10459000ADC-200411
        IF areasPCent > 1000 THEN                                        1045920050.189.002
          REPLACE pt:pt                                                  1045940050.189.002
-              BY " PCTJ-INUSE="48"7F",(areasPCent DIV 1000)FOR 1 DIGITS,1045945050.189.002
+              BY " PCTJ_INUSE="48"7F",(areasPCent DIV 1000)FOR 1 DIGITS,10459450ADC-200411
                  "."                                                    1045950050.189.002
        ELSE                                                             1045960050.189.002
-         REPLACE pt:pt BY " PCTJ-INUSE="48"7F""0.";                     1045980050.189.002
+         REPLACE pt:pt BY " PCTJ_INUSE="48"7F""0.";                     10459800ADC-200411
        REPLACE pt:pt BY (areasPCent MOD 1000) FOR 3 DIGITS,48"7F";      1046000050.189.002
        REPLACE pt:pt                                                    10463000          
-            BY " RECORDS-ALLOCATED="48"7F",tActiveRecs FOR*DIGITS,      10464000          
+            BY " RECORDS_ALLOCATED="48"7F",tActiveRecs FOR*DIGITS,      10464000ADC-200411
                48"7F";                                                  10465000          
        IF bDeletedError THEN                                            10465100          
          BEGIN                                                          10465200          
          REPLACE pt:pt                                                  10465300          
-              BY " RECORDS-DELETED="48"7F","************"48"7F";        10465400          
+              BY " RECORDS_DELETED="48"7F","************"48"7F";        10465400ADC-200411
          REPLACE pt:pt                                                  10465500          
-              BY " PCTJ-DELETED="48"7F","**********,**"48"7F";          10465600          
+              BY " PCTJ_DELETED="48"7F","**********,**"48"7F";          10465600ADC-200411
          END                                                            10465700          
        ELSE                                                             10465800          
          BEGIN                                                          10465900          
          REPLACE pt:pt                                                  10466000          
-              BY " RECORDS-DELETED="48"7F",tDeletedRecs FOR*DIGITS,     10467000          
+              BY " RECORDS_DELETED="48"7F",tDeletedRecs FOR*DIGITS,     10467000ADC-200411
                  48"7F";                                                10467500          
          REPLACE pt:pt                                                  10468000          
-              BY " PCTJ-DELETED="48"7F""0.",deletedPCent FOR 3 DIGITS,  1047020050.189.001
+              BY " PCTJ_DELETED="48"7F""0.",deletedPCent FOR 3 DIGITS,  10470200ADC-200411
                  48"7F";                                                1047040050.189.001
          END;                                                           10470500          
        REPLACE pt:pt                                                    10471000          
-            BY " ACTIVE-RECORDS="48"7F",tRecsActive FOR*DIGITS,48"7F";  10472000          
+            BY " ACTIVE_RECORDS="48"7F",tRecsActive FOR*DIGITS,48"7F";  10472000ADC-200411
        REPLACE pt:pt                                                    10473000          
             BY " POPULATION="48"7F",irPopulation FOR*DIGITS,48"7F";     10474000          
 %      REPLACE pt:pt                                                    10475000          
@@ -558,11 +562,12 @@ $$VERSION  52.189.004                                                   10036000
    hd2UpdateLevel := aNumber;                                           10514000          
    t7 := TIME(7);                                                       10515000          
    REPLACE pt:buf                                                       10516000          
-        BY "<DATABASE DB-NAME="48"7F",dbName FOR dbNameLen,48"7F",      10517000          
-           " UPDATE-LEVEL="48"7F",aNumber FOR*DIGITS,48"7F"             10518000          
-           " REPORT-DATE="48"7F", t7.[29:06]FOR 2 DIGITS,"/",           10519000          
-           t7.[35:06]FOR 2 DIGITS,"/",t7.[47:12]FOR 4 DIGITS,           10520000          
-           " ",t7.[23:06]FOR 2 DIGITS,":",t7.[17:06]FOR 2 DIGITS,":",   10521000          
+        BY "<DATABASE BD_NAME="48"7F",dbName FOR dbNameLen,48"7F",      10517000ADC-200411
+           " UPDATE_LEVEL="48"7F",aNumber FOR*DIGITS,48"7F"             10518000ADC-200411
+           " REPORT_DATE="48"7F", t7.[47:12]FOR 4 DIGITS,"/",           10519000ADC-200411
+           t7.[35:06]FOR 2 DIGITS,"/",                                  10520000ADC-200411
+           t7.[29:06]FOR 2 DIGITS,"T",                                  10520500ADC-200411
+           t7.[23:06]FOR 2 DIGITS,":",t7.[17:06]FOR 2 DIGITS,":",       10521000ADC-200411
            t7.[11:06]FOR 2 DIGITS,48"7F",                               10522000          
            " >",vCrLf;                                                  10523000          
    WRITE(XML, OFFSET(pt), buf);                                         10524000          
