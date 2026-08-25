@@ -109,7 +109,7 @@ $$VERSION  57.189.005                                                   10036000
      (KIND=DISK                                                         10096000          
      ,MYUSE=IN                                                          10097000          
      ,DEPENDENTSPECS                                                    10098000          
-%    ,TITLE="(TVPRGDRB)DESCRIPTION/TVPRGDRB ON PRUSER01."               10099000ADC-180625
+%    ,TITLE="(DBUSER)DESCRIPTION/SAMPLEDB ON DBPACK01."               10099000ADC-180625
      )                                                                  10100000          
   ,dataSet                                                              10101000          
      (KIND=DISK                                                         10102000          
