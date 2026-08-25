@@ -41,7 +41,7 @@ $$VERSION  57.189.005                                                   10036000
 % 003 2008/09/11 Acceso a tablas por title completo                    %1003860052.189.003
 % 004 2009/07/08 Modificaciones para estructuras Sectionadas           %1003880052.189.004
 % 005 2020/04/11 Adaptacion para LOAD XML:                             %10038820ADC-200411
-%     LOAD XML INFILE "C:\\Users\\adiaz\\Downloads\\IQGDRB.xml"        %10038840ADC-200411
+%     LOAD XML INFILE "SAMPLEDB.xml"                                   %10038840ADC-200411
 %     INTO TABLE ispecs                                                %10038860ADC-200411
 %     ROWS IDENTIFIED BY '<DATASET>';                                  %10038880ADC-200411
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%10039000          

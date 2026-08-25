@@ -1,31 +1,120 @@
 # SDSANALYZER
 
-Programa Algol generador de informe XML con las estructuras (tablas) de una base de datos DMSII.
-El esquema del archivo xml es el siguiente
+The same question DBANALYZER answers — which structure in your DMSII database is
+about to stop it — as XML instead of a printed page, so you can keep the answers
+and watch them move.
 
-Este archivo puede ser importado directamente en Excel y usar las funciones de filtro.
+A data set that fills the space its declared population allowed for does not
+slow down and it does not warn you. It fails, and the database is down until
+somebody reorganises that structure. One report tells you where you stand today.
+A series of them tells you how long you have.
 
-El ejemplo que sigue —y `SYMBOL/SAMPLEDB.xml`— son datos inventados: una base ficticia
-con cifras internamente consistentes, para mostrar el formato de salida.
+## Why XML
 
-```(xml)
+A printed report is read once and thrown away. This one loads.
+
+Into Excel, straight, for sorting by saturation and filtering out the structures
+you do not care about. Or into MySQL or MariaDB, which is what the 2020 revision
+was for:
+
+```sql
+LOAD XML INFILE 'SAMPLEDB.xml'
+INTO TABLE ispecs
+ROWS IDENTIFIED BY '<DATASET>';
+```
+
+Run it monthly into the same table and you have a history. Then the question
+stops being *how full is CUSTOMER* and becomes *how many months until it is
+full*, which is the one worth asking:
+
+```sql
+SELECT `STR-NAME`,
+       MAX(`ACTIVE-RECORDS`) - MIN(`ACTIVE-RECORDS`) AS growth,
+       MAX(`ACTIVE-RECORDS`) / MAX(`POPULATION`) * 100 AS saturation
+FROM ispecs
+GROUP BY `STR-NAME`
+ORDER BY saturation DESC;
+```
+
+## The schema
+
+One `<DATABASE>` element, one `<DATASET>` per standard data set:
+
+```xml
+<DATASET STR-NAME="CUSTOMER" NUM="5" SECTIONS="0" FAMILY="DBPACK01"
+         SECTORS="24120" MB="4.14"
+         AREAS-ALLOWED="340" AREAS-INUSE="24" PCTJ-INUSE="0.071"
+         RECORDS-ALLOCATED="41880" RECORDS-DELETED="1204" PCTJ-DELETED="0.029"
+         ACTIVE-RECORDS="40676" POPULATION="500000"/>
+```
+
+| Attribute | Reading it |
+|---|---|
+| `ACTIVE-RECORDS` / `POPULATION` | The ratio to watch. At 1.0 the structure is out of room and takes the database with it. Anything past 0.8 is a reorganisation to schedule rather than suffer. |
+| `SECTORS`, `MB` | What it occupies on the pack. A sector is 180 bytes. |
+| `AREAS-ALLOWED`, `AREAS-INUSE`, `PCTJ-INUSE` | Areas are preallocated extents: the ceiling, how many exist, and the ratio. |
+| `RECORDS-ALLOCATED`, `RECORDS-DELETED`, `PCTJ-DELETED` | Slots created and slots freed. Deleted space stays with the structure until a reorganisation gives it back — dead weight you back up every night. |
+| `SECTIONS` | Non-zero for sectioned structures. |
+
+## It never opens the database
+
+The input is the **description file**, not the database. The program walks the
+structure list inside it, so it takes no locks, needs no window, and cannot
+disturb anything that is running. On a production machine that is the whole
+reason it is usable: run it at any hour, as often as you like.
+
+## How to compile
+
+From CANDE:
+
+```
+C SYMBOL/SDSANALYZER AS SDSANALYZER WITH DMALGOL
+```
+
+## How to run
+
+From CANDE. With no file equation it reads `DESCRIPTION/<usercode>`:
+
+```
+RUN SDSANALYZER
+```
+
+To point it at another description file:
+
+```
+RUN SDSANALYZER;FILE DASDL(TITLE = <DESCRIPTION FILE TITLE>)
+```
+
+The report is written to `XML/STATUS/<database name>`.
+
+## Sample output
+
+`SYMBOL/SAMPLEDB.xml` is in this repository. The database is made up, with
+figures consistent with each other, to show the shape:
+
+```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <DATABASE DB-NAME="SAMPLEDB" UPDATE-LEVEL="7" REPORT-DATE="14/03/2025 09:22:41" >
 <DATASET STR-NAME="GLOBALS" NUM="1" SECTIONS="0" FAMILY="DBPACK01" SECTORS="180" MB="0.03" AREAS-ALLOWED="2" AREAS-INUSE="1" PCTJ-INUSE="0.500" RECORDS-ALLOCATED="1" RECORDS-DELETED="0" PCTJ-DELETED="0.000" ACTIVE-RECORDS="1" POPULATION="1"/>
 <DATASET STR-NAME="CUSTOMER" NUM="5" SECTIONS="0" FAMILY="DBPACK01" SECTORS="24120" MB="4.14" AREAS-ALLOWED="340" AREAS-INUSE="24" PCTJ-INUSE="0.071" RECORDS-ALLOCATED="41880" RECORDS-DELETED="1204" PCTJ-DELETED="0.029" ACTIVE-RECORDS="40676" POPULATION="500000"/>
-<DATASET STR-NAME="ADDRESS" NUM="7" SECTIONS="0" FAMILY="DBPACK01" SECTORS="10080" MB="1.73" AREAS-ALLOWED="210" AREAS-INUSE="10" PCTJ-INUSE="0.048" RECORDS-ALLOCATED="17332" RECORDS-DELETED="288" PCTJ-DELETED="0.017" ACTIVE-RECORDS="17044" POPULATION="400000"/>
-<DATASET STR-NAME="CONTACT" NUM="9" SECTIONS="0" FAMILY="DBPACK01" SECTORS="5040" MB="0.87" AREAS-ALLOWED="156" AREAS-INUSE="5" PCTJ-INUSE="0.032" RECORDS-ALLOCATED="8104" RECORDS-DELETED="0" PCTJ-DELETED="0.000" ACTIVE-RECORDS="8104" POPULATION="250000"/>
-<DATASET STR-NAME="PRODUCT" NUM="12" SECTIONS="0" FAMILY="DBPACK01" SECTORS="3528" MB="0.61" AREAS-ALLOWED="88" AREAS-INUSE="4" PCTJ-INUSE="0.045" RECORDS-ALLOCATED="6215" RECORDS-DELETED="41" PCTJ-DELETED="0.007" ACTIVE-RECORDS="6174" POPULATION="120000"/>
-<DATASET STR-NAME="PRICE-LIST" NUM="14" SECTIONS="0" FAMILY="DBPACK01" SECTORS="1008" MB="0.17" AREAS-ALLOWED="40" AREAS-INUSE="1" PCTJ-INUSE="0.025" RECORDS-ALLOCATED="940" RECORDS-DELETED="0" PCTJ-DELETED="0.000" ACTIVE-RECORDS="940" POPULATION="60000"/>
-<DATASET STR-NAME="STOCK" NUM="16" SECTIONS="0" FAMILY="DBPACK01" SECTORS="7056" MB="1.21" AREAS-ALLOWED="175" AREAS-INUSE="7" PCTJ-INUSE="0.040" RECORDS-ALLOCATED="12480" RECORDS-DELETED="615" PCTJ-DELETED="0.049" ACTIVE-RECORDS="11865" POPULATION="300000"/>
-<DATASET STR-NAME="ORDER-HEAD" NUM="20" SECTIONS="0" FAMILY="DBPACK01" SECTORS="50400" MB="8.65" AREAS-ALLOWED="720" AREAS-INUSE="50" PCTJ-INUSE="0.069" RECORDS-ALLOCATED="88104" RECORDS-DELETED="2310" PCTJ-DELETED="0.026" ACTIVE-RECORDS="85794" POPULATION="1500000"/>
-<DATASET STR-NAME="ORDER-LINE" NUM="22" SECTIONS="0" FAMILY="DBPACK01" SECTORS="151200" MB="25.96" AREAS-ALLOWED="980" AREAS-INUSE="151" PCTJ-INUSE="0.154" RECORDS-ALLOCATED="402556" RECORDS-DELETED="10877" PCTJ-DELETED="0.027" ACTIVE-RECORDS="391679" POPULATION="5000000"/>
-<DATASET STR-NAME="SHIPMENT" NUM="25" SECTIONS="0" FAMILY="DBPACK01" SECTORS="20160" MB="3.46" AREAS-ALLOWED="480" AREAS-INUSE="20" PCTJ-INUSE="0.042" RECORDS-ALLOCATED="33012" RECORDS-DELETED="704" PCTJ-DELETED="0.021" ACTIVE-RECORDS="32308" POPULATION="800000"/>
-<DATASET STR-NAME="INVOICE" NUM="28" SECTIONS="0" FAMILY="DBPACK01" SECTORS="35280" MB="6.06" AREAS-ALLOWED="615" AREAS-INUSE="35" PCTJ-INUSE="0.057" RECORDS-ALLOCATED="61230" RECORDS-DELETED="1508" PCTJ-DELETED="0.025" ACTIVE-RECORDS="59722" POPULATION="1200000"/>
-<DATASET STR-NAME="INVOICE-LINE" NUM="30" SECTIONS="0" FAMILY="DBPACK01" SECTORS="100800" MB="17.30" AREAS-ALLOWED="900" AREAS-INUSE="100" PCTJ-INUSE="0.111" RECORDS-ALLOCATED="268401" RECORDS-DELETED="6122" PCTJ-DELETED="0.023" ACTIVE-RECORDS="262279" POPULATION="4000000"/>
-<DATASET STR-NAME="PAYMENT" NUM="33" SECTIONS="0" FAMILY="DBPACK01" SECTORS="15120" MB="2.60" AREAS-ALLOWED="402" AREAS-INUSE="15" PCTJ-INUSE="0.037" RECORDS-ALLOCATED="25744" RECORDS-DELETED="390" PCTJ-DELETED="0.015" ACTIVE-RECORDS="25354" POPULATION="700000"/>
-<DATASET STR-NAME="SUPPLIER" NUM="36" SECTIONS="0" FAMILY="DBPACK01" SECTORS="1008" MB="0.17" AREAS-ALLOWED="36" AREAS-INUSE="1" PCTJ-INUSE="0.028" RECORDS-ALLOCATED="612" RECORDS-DELETED="0" PCTJ-DELETED="0.000" ACTIVE-RECORDS="612" POPULATION="20000"/>
-<DATASET STR-NAME="EMPLOYEE" NUM="40" SECTIONS="0" FAMILY="DBPACK01" SECTORS="2016" MB="0.35" AREAS-ALLOWED="64" AREAS-INUSE="2" PCTJ-INUSE="0.031" RECORDS-ALLOCATED="1877" RECORDS-DELETED="22" PCTJ-DELETED="0.012" ACTIVE-RECORDS="1855" POPULATION="50000"/>
-<DATASET STR-NAME="AUDIT-EVENT" NUM="45" SECTIONS="0" FAMILY="DBPACK01" SECTORS="60480" MB="10.38" AREAS-ALLOWED="850" AREAS-INUSE="60" PCTJ-INUSE="0.071" RECORDS-ALLOCATED="155203" RECORDS-DELETED="0" PCTJ-DELETED="0.000" ACTIVE-RECORDS="155203" POPULATION="3000000"/>
+...
 </DATABASE>
 ```
+
+`GLOBALS` sits at 1.0 by construction — the global data set holds exactly one
+record and is declared for one. Every other structure at 1.0 is a problem.
+
+## Related
+
+[DBANALYZER](https://github.com/AdolfoCl/DBANALYZER) prints the same inventory
+as a report, for when you want to read it rather than load it.
+
+[dmsii-to-mariadb](https://github.com/AdolfoCl/dmsii-to-mariadb) is the other
+half of knowing a DMSII database: these two tell you how much room is left, that
+one tells you what shape it has, by compiling the DASDL into a relational schema.
+
+## History
+
+Written in 2007 and maintained since: percentages over 100 % in 2007, access by
+full title in 2008, sectioned structures in 2009, and the XML made loadable in
+2020.
