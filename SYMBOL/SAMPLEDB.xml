@@ -1,14 +1,3 @@
-# SDSANALYZER
-
-Programa Algol generador de informe XML con las estructuras (tablas) de una base de datos DMSII.
-El esquema del archivo xml es el siguiente
-
-Este archivo puede ser importado directamente en Excel y usar las funciones de filtro.
-
-El ejemplo que sigue —y `SYMBOL/SAMPLEDB.xml`— son datos inventados: una base ficticia
-con cifras internamente consistentes, para mostrar el formato de salida.
-
-```(xml)
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <DATABASE DB-NAME="SAMPLEDB" UPDATE-LEVEL="7" REPORT-DATE="14/03/2025 09:22:41" >
 <DATASET STR-NAME="GLOBALS" NUM="1" SECTIONS="0" FAMILY="DBPACK01" SECTORS="180" MB="0.03" AREAS-ALLOWED="2" AREAS-INUSE="1" PCTJ-INUSE="0.500" RECORDS-ALLOCATED="1" RECORDS-DELETED="0" PCTJ-DELETED="0.000" ACTIVE-RECORDS="1" POPULATION="1"/>
@@ -28,4 +17,3 @@ con cifras internamente consistentes, para mostrar el formato de salida.
 <DATASET STR-NAME="EMPLOYEE" NUM="40" SECTIONS="0" FAMILY="DBPACK01" SECTORS="2016" MB="0.35" AREAS-ALLOWED="64" AREAS-INUSE="2" PCTJ-INUSE="0.031" RECORDS-ALLOCATED="1877" RECORDS-DELETED="22" PCTJ-DELETED="0.012" ACTIVE-RECORDS="1855" POPULATION="50000"/>
 <DATASET STR-NAME="AUDIT-EVENT" NUM="45" SECTIONS="0" FAMILY="DBPACK01" SECTORS="60480" MB="10.38" AREAS-ALLOWED="850" AREAS-INUSE="60" PCTJ-INUSE="0.071" RECORDS-ALLOCATED="155203" RECORDS-DELETED="0" PCTJ-DELETED="0.000" ACTIVE-RECORDS="155203" POPULATION="3000000"/>
 </DATABASE>
-```
