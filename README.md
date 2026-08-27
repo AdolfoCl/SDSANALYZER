@@ -118,3 +118,7 @@ one tells you what shape it has, by compiling the DASDL into a relational schema
 Written in 2007 and maintained since: percentages over 100 % in 2007, access by
 full title in 2008, sectioned structures in 2009, and the XML made loadable in
 2020.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
