@@ -109,7 +109,7 @@ record and is declared for one. Every other structure at 1.0 is a problem.
 [DBANALYZER](https://github.com/AdolfoCl/DBANALYZER) prints the same inventory
 as a report, for when you want to read it rather than load it.
 
-[dmsii-to-mariadb](https://github.com/AdolfoCl/dmsii-to-mariadb) is the other
+[dmsii-to-sql](https://github.com/AdolfoCl/dmsii-to-sql) is the other
 half of knowing a DMSII database: these two tell you how much room is left, that
 one tells you what shape it has, by compiling the DASDL into a relational schema.
 
